@@ -4,8 +4,6 @@ import Perceptron from './perceptron.mjs';
 import fs from 'node:fs/promises';
 
 const filePath = "../dataset/mnist_test_translated.csv";
-const amountInputNeurons = 784; // 28x28 - amount pixels of image
-const amountOutputNeurons = 10;
 
 const main = async () => {
 	const trainingData = [];
@@ -29,18 +27,12 @@ const main = async () => {
 
 	perceptron.initWeights();
 
-	console.log(perceptron.outputWeights);
-	perceptron.getResult(trainingData[0][1])
-	console.log(perceptron.outputNeurons);
-
 	perceptron.train();
-
-	console.log(perceptron.outputWeights);
 
 	console.log("Perceptron has been trained");
 
 	let amountRight = 0;
-	let result = 0, maxValue = 0;
+	let result = 0;
 
 	for (let i = 0; i < trainingData.length; i++){
 		result = perceptron.getResult(trainingData[i][1]);
@@ -48,10 +40,6 @@ const main = async () => {
 	}
 
 	console.log(`Accuracy ${100 * amountRight / trainingData.length}% (${amountRight}/${trainingData.length})`);
-	console.log(result);
-	console.log(perceptron.outputNeurons);
-	perceptron.getResult(trainingData[0][1])
-	console.log(perceptron.outputNeurons);
 };
 
 main();
