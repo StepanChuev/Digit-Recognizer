@@ -1,6 +1,8 @@
 'use strict';
 
-const paintGrid = () => {
+import Perceptron from "../src/perceptron.mjs";
+
+const paintGrid = (context, fieldSize, ceilSize) => {
 	for (let i = 0; i < fieldSize; i++){
 		context.beginPath();
 		context.moveTo(ceilSize * i, 0);
@@ -14,7 +16,7 @@ const paintGrid = () => {
 	}
 };
 
-const paintSquare = (offsetX, offsetY) => {
+const paintSquare = (context, offsetX, offsetY, ceilSize, sizePen = 1) => {
 	let i = Math.floor(offsetY / ceilSize);
 	let j = Math.floor(offsetX / ceilSize);
 
@@ -23,7 +25,7 @@ const paintSquare = (offsetX, offsetY) => {
 	context.fill();
 };
 
-const changeCeils = (offsetX, offsetY) => {
+const changeCeils = (context, offsetX, offsetY, ceilSize, ceils, sizePen = 1) => {
 	let begini = Math.floor(offsetY / ceilSize);
 	let beginj = Math.floor(offsetX / ceilSize);
 	let i = 0;
@@ -41,44 +43,69 @@ const changeCeils = (offsetX, offsetY) => {
 	}
 };
 
-const canvas = document.querySelector('.canvas');
-const context = canvas.getContext("2d");
-const ceilSize = 20;
-const fieldSize = 28;
+const recognizeDigit = (perceptron, ceils) => {
+	const data = ceils.flat();
 
-canvas.width = fieldSize * ceilSize;
-canvas.height = fieldSize * ceilSize;
-context.fillStyle = "#000";
-context.strokeStyle = "#808080";
+	return perceptron.getResult(data);
+};
 
-const ceils = [];
-let sizePen = 2;
-let isMousedown = false;
 
-for (let i = 0; i < fieldSize; i++){
-	ceils.push([]);
+const main = async () => {
+	const canvas = document.querySelector('.canvas');
+	const context = canvas.getContext("2d");
+	const ceilSize = 20;
+	const fieldSize = 28;
 
-	for (let j = 0; j < fieldSize; j++){
-		ceils[i].push(0);
+	canvas.width = fieldSize * ceilSize;
+	canvas.height = fieldSize * ceilSize;
+	context.fillStyle = "#000";
+	context.strokeStyle = "#808080";
+
+	const weightsResponse = await fetch("../dataset/weights.json");
+	const weights = await weightsResponse.json();
+	const perceptron = new Perceptron([], 0, 0);
+	perceptron.hiddenWeights = weights.hiddenWeights;
+	perceptron.outputWeights = weights.outputWeights;
+
+	const recognizeBtn = document.querySelector('.recognize');
+
+	const ceils = [];
+	let sizePen = 2;
+	let isMousedown = false;
+
+	for (let i = 0; i < fieldSize; i++){
+		ceils.push([]);
+
+		for (let j = 0; j < fieldSize; j++){
+			ceils[i].push(0);
+		}
 	}
-}
 
-paintGrid();
+	paintGrid(context, fieldSize, ceilSize);
 
-canvas.addEventListener("mousedown", (event) => {
-	paintSquare(event.offsetX, event.offsetY);
-	changeCeils(event.offsetX, event.offsetY);
+	canvas.addEventListener("mousedown", (event) => {
+		paintSquare(context, event.offsetX, event.offsetY, ceilSize, sizePen);
+		changeCeils(context, event.offsetX, event.offsetY, ceilSize, ceils, sizePen);
 
-	isMousedown = true;
-});
+		isMousedown = true;
+	});
 
-window.addEventListener("mouseup", () => isMousedown = false);
+	window.addEventListener("mouseup", () => isMousedown = false);
 
-canvas.addEventListener("mousemove", (event) => {
-	if (!isMousedown){
-		return;
-	}
+	canvas.addEventListener("mousemove", (event) => {
+		if (!isMousedown){
+			return;
+		}
 
-	paintSquare(event.offsetX, event.offsetY);
-	changeCeils(event.offsetX, event.offsetY);
-});
+		paintSquare(context, event.offsetX, event.offsetY, ceilSize, sizePen);
+		changeCeils(context, event.offsetX, event.offsetY, ceilSize, ceils, sizePen);
+	});
+
+	recognizeBtn.addEventListener("click", () => {
+		console.log(recognizeDigit(perceptron, ceils));
+		console.log(perceptron);
+	})
+};
+
+
+main();

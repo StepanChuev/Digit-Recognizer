@@ -3,13 +3,13 @@
 import Perceptron from './perceptron.mjs';
 import fs from 'node:fs/promises';
 
-const filePath = "../dataset/mnist_test_translated.csv";
-
 const main = async () => {
+	const dataFilePath = "../dataset/mnist_test_translated.csv";
+	const weightsFilePath = "../dataset/weights.json";
 	const trainingData = [];
-	const file = await fs.open(filePath);
+	const dataFile = await fs.open(dataFilePath);
 
-	for await (let line of file.readLines()){
+	for await (let line of dataFile.readLines()){
 		let data = line.split(",");
 
 		trainingData.push([+data[0], []]);
@@ -19,7 +19,7 @@ const main = async () => {
 		}
 	}
 
-	file.close();
+	dataFile.close();
 
 	console.log("File has been read");
 
@@ -40,6 +40,10 @@ const main = async () => {
 	}
 
 	console.log(`Accuracy ${100 * amountRight / trainingData.length}% (${amountRight}/${trainingData.length})`);
+
+
+	await fs.writeFile(weightsFilePath, "{\n\"hiddenWeights\":" + JSON.stringify(perceptron.hiddenWeights) + ",\n", err => console.log(err));
+	await fs.writeFile(weightsFilePath, "\"outputWeights\":" + JSON.stringify(perceptron.outputWeights) + "\n}", { flag: "a" }, err => console.log(err));
 };
 
 main();
