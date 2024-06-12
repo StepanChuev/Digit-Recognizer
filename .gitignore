@@ -1,3 +1,4 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0f35c4dba1ecfa6dcf5bf3a8d7086dcc453f9b8d4f7dff26feee78ec02ab35af
-size 115
+dataset/mnist_test.csv
+dataset/mnist_test_translated.csv
+dataset/mnist_train.csv
+dataset/mnist_train_translated.csv
