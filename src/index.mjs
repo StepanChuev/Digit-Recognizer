@@ -1,65 +1,85 @@
 'use strict';
 
 import Perceptron from './perceptron.mjs';
+import { randomInt, readConfig } from './module.mjs';
 import fs from 'node:fs/promises';
 
-const main = async () => {
-	const trainFilePath = "../dataset/mnist_train_translated.csv";
-	const testFilePath = "../dataset/mnist_test_translated.csv";
-	const weightsFilePath = "../dataset/weights.json";
-	const trainFile = await fs.open(trainFilePath);
-	let trainingData = [];
+const readTrainData = async (trainFilesPath) => {
+	const trainData = [];
 
-	for await (let line of trainFile.readLines()){
-		let data = line.split(",");
+	for (let i = 0; i < trainFilesPath.length; i++){
+		let file = await fs.open(trainFilesPath[i]);
 
-		trainingData.push([+data[0], []]);
+		for await (let line of file.readLines()){
+			let index = randomInt(0, trainData.length - 1);
+			let data = line.split(",");
 
-		for (let i = 1; i < data.length; i++){
-			trainingData[trainingData.length - 1][1].push(+data[i]);
+			trainData.splice(index, 0, [+data[0], []]);
+
+			for (let j = 1; j < data.length; j++){
+				trainData[index][1].push(+data[j]);
+			}
 		}
+
+		file.close();
 	}
 
-	trainFile.close();
+	return trainData;
+};
 
-	console.log("File has been read");
+const readTestData = async (testFilesPath) => {
+	const testData = [];
 
-	const perceptron = new Perceptron(trainingData, 0.2, 50);
+	for (let i = 0; i < testFilesPath.length; i++){
+		let file = await fs.open(testFilesPath[i]);
+
+		for await (let line of file.readLines()){
+			let data = line.split(",");
+
+			testData.push([+data[0], []]);
+
+			for (let j = 1; j < data.length; j++){
+				testData[testData.length - 1][1].push(+data[j]);
+			}
+		}
+
+		file.close();
+	}
+
+	return testData;
+};
+
+const writeWeightsToFile = async (filePath, perceptron) => {
+	await fs.writeFile(filePath, "{\n\"hiddenWeights\":" + JSON.stringify(perceptron.hiddenWeights) + ",\n", err => console.log(err));
+	await fs.writeFile(filePath, "\"outputWeights\":" + JSON.stringify(perceptron.outputWeights) + "\n}", { flag: "a" }, err => console.log(err));
+};
+
+const main = async () => {
+	const configFilePath = "./config.json";
+	const config = await readConfig(configFilePath);
+	const trainData = await readTrainData(config["train_files"]);
+	const testData = await readTestData(config["test_files"]);
+
+	console.log("Files has been read");
+
+	const perceptron = new Perceptron(trainData, 0.2, 50);
 
 	perceptron.initWeights();
-
 	perceptron.train();
-
 	console.log("Perceptron has been trained");
-
-	trainingData = [];
-	const testFile = await fs.open(testFilePath);
-
-	for await (let line of testFile.readLines()){
-		let data = line.split(",");
-
-		trainingData.push([+data[0], []]);
-
-		for (let i = 1; i < data.length; i++){
-			trainingData[trainingData.length - 1][1].push(+data[i]);
-		}
-	}
-
-	testFile.close();
 
 	let amountRight = 0;
 	let result = 0;
 
-	for (let i = 0; i < trainingData.length; i++){
-		result = perceptron.getResult(trainingData[i][1]);
-		amountRight += (result === trainingData[i][0]);
+	for (let i = 0; i < testData.length; i++){
+		result = perceptron.getResult(testData[i][1]);
+		amountRight += (result === testData[i][0]);
 	}
 
-	console.log(`Accuracy ${100 * amountRight / trainingData.length}% (${amountRight}/${trainingData.length})`);
+	console.log(`Accuracy ${100 * amountRight / testData.length}% (${amountRight}/${testData.length})`);
 
-
-	await fs.writeFile(weightsFilePath, "{\n\"hiddenWeights\":" + JSON.stringify(perceptron.hiddenWeights) + ",\n", err => console.log(err));
-	await fs.writeFile(weightsFilePath, "\"outputWeights\":" + JSON.stringify(perceptron.outputWeights) + "\n}", { flag: "a" }, err => console.log(err));
+	await writeWeightsToFile(config["weights_file"], perceptron);
+	console.log("Weights has been wrote");
 };
 
 main();
