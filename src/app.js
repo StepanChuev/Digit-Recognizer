@@ -37,6 +37,12 @@ const staticFile = (response, filePath, extension) => {
 	});
 };
 
+const writeDigitToFile = async (path, digit, ceils) => {
+	await fs.writeFile(path, `${digit},${ceils.toString()}\n`, { flag: "a" }, err => {
+		console.log(err);
+	});
+};
+
 http.createServer((request, response) => {
 	const url = request.url;
 
@@ -55,8 +61,36 @@ http.createServer((request, response) => {
 			staticFile(response, "./perceptron.mjs", ".js");
 			break;
 
+		case "/src/module.mjs":
+			staticFile(response, "./module.mjs", ".js");
+			break;
+
 		case "/dataset/weights.json":
 			staticFile(response, "../dataset/weights.json", ".json");
+			break;
+
+		case "/dataset/user_train.csv":
+			const chunks = [];
+
+			request.on("data", chunk => {
+				chunks.push(chunk);
+			});
+
+			request.on("error", err => {
+				console.log(err);
+			});
+
+			request.on("end", async () => {
+				const body = Buffer.concat(chunks);
+				const data = JSON.parse(body.toString());
+
+				console.log(+data.digit);
+
+				await writeDigitToFile("../dataset/user_train.csv", data.digit, data.ceils);
+			});
+
+			response.end();
+
 			break;
 
 		default:
@@ -73,5 +107,4 @@ http.createServer((request, response) => {
 				response.end();
 			}
 	}
-
 }).listen(port);
