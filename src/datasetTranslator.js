@@ -1,12 +1,14 @@
 'use strict';
 
-const fs = require('node:fs/promises');
+import { readConfig } from './module.mjs';
+import fs from 'node:fs/promises';
 
-const originalFilePath = "../dataset/mnist_test.csv"; // ../dataset/mnist_train.csv
-const translatedFilePath = "../dataset/mnist_test_translated.csv"; // ../dataset/mnist_train_translated.csv
+const config = await readConfig("./config.json");
+const translateFilePath = config["translate_file"];
+const translatedFilePath = config["translated_file"];
 
 const main = async () => {
-	const origFile = await fs.open(originalFilePath);
+	const origFile = await fs.open(translateFilePath);
 
 	await fs.writeFile(translatedFilePath, "", err => console.log(err));
 
