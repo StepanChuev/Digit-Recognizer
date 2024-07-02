@@ -1,9 +1,6 @@
 'use strict';
 
-const randomInt = (min, max) => {
-	return Math.floor(Math.random() * (max - min + 1) + min);
-};
-
+import { randomInt } from './module.mjs';
 
 class Perceptron {
 	#amountHiddenNeurons; #amountOutputNeurons;
