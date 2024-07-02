@@ -1,4 +1,1 @@
-dataset/mnist_test.csv
-dataset/mnist_test_translated.csv
-dataset/mnist_train.csv
-dataset/mnist_train_translated.csv
+*.csv
