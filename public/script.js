@@ -2,6 +2,12 @@
 
 import Perceptron from "../src/perceptron.mjs";
 
+const calculatePercents = (value, accuracyAfterPoint) => {
+	let a = 10 ** accuracyAfterPoint;
+
+	return Math.floor(value * a * 100) / a;
+};
+
 const paintGrid = (context, fieldSize, ceilSize) => {
 	for (let i = 0; i < fieldSize; i++){
 		context.beginPath();
@@ -23,6 +29,11 @@ const paintSquare = (context, offsetX, offsetY, ceilSize, sizePen = 1) => {
 	context.beginPath();
 	context.rect(j * ceilSize, i * ceilSize, ceilSize * sizePen, ceilSize * sizePen);
 	context.fill();
+};
+
+const clearField = (context, canvas, fieldSize, ceilSize) => {
+	context.clearRect(0, 0, canvas.width, canvas.height);
+	paintGrid(context, fieldSize, ceilSize);
 };
 
 const changeCeils = (context, offsetX, offsetY, ceilSize, ceils, sizePen = 1) => {
@@ -63,6 +74,27 @@ const createMatrix = (width, height, value) => {
 	return mtr;
 };
 
+const sendDigitToDataset = async (url, digit, ceils) => {
+	if (!(+digit >= 0 && +digit <= 9)){
+		return false;
+	}
+
+	const data = JSON.stringify({
+		"digit": digit,
+		"ceils": ceils
+	});
+
+	await fetch(url, {
+		method: "POST",
+		headers: {
+    		"Content-Type": "application/json",
+  		},
+		body: data
+	});
+
+	return true;
+};
+
 
 const main = async () => {
 	const canvas = document.querySelector('.canvas');
@@ -83,6 +115,9 @@ const main = async () => {
 
 	const recognizeBtn = document.querySelector('.recognize');
 	const clearBtn = document.querySelector('.clear');
+	const addBtn = document.querySelector('.add');
+	const rightDigit = document.querySelector('.right');
+	const output = document.querySelector('.output-neurons');
 
 	let ceils = createMatrix(fieldSize, fieldSize, 0);
 	let sizePen = 2;
@@ -109,18 +144,49 @@ const main = async () => {
 	});
 
 	recognizeBtn.addEventListener("click", () => {
-		console.log(recognizeDigit(perceptron, ceils));
+		const result = recognizeDigit(perceptron, ceils);
+
+		output.innerHTML = "";
+
+		for (let i = 0; i < perceptron.outputNeurons.length; i++){
+			output.innerHTML += `<label>${i}: <progress value="${perceptron.outputNeurons[i]}" max="1"></progress> ${calculatePercents(perceptron.outputNeurons[i], 2)}%</label><br>`;
+		}
+
+		console.log(result);
 		console.log(perceptron);
 	});
 
 	clearBtn.addEventListener("click", () => {
-		context.clearRect(0, 0, canvas.width, canvas.height);
-		paintGrid(context, fieldSize, ceilSize);
+		clearField(context, canvas, fieldSize, ceilSize);
+
 		ceils = createMatrix(fieldSize, fieldSize, 0);
 		perceptron.hiddenNeurons = new Array(perceptron.hiddenNeurons.length).fill(0);
 		perceptron.outputNeurons = new Array(perceptron.outputNeurons.length).fill(0);
 	});
-};
 
+	addBtn.addEventListener("click", async () => {
+		let hasSent = await sendDigitToDataset("/dataset/user_train.csv", rightDigit.value, ceils.flat());
+
+		if (!hasSent){
+			alert("You must input the digits 0 - 9");
+		}
+
+		console.log(+rightDigit.value);
+	});
+
+	window.addEventListener("keypress", async (event) => {
+		if (event.key !== "Enter"){
+			return;
+		}
+
+		let hasSent = await sendDigitToDataset("/dataset/user_train.csv", rightDigit.value, ceils.flat());
+
+		if (!hasSent){
+			alert("You must input the digits 0 - 9");
+		}
+
+		console.log(+rightDigit.value);
+	});
+};
 
 main();
